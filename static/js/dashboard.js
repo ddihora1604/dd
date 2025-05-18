@@ -103,6 +103,11 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
         // PERFORMANCE OPTIMIZATION: Load data progressively in phases
         // Phase 1: First load critical data for the overview tab
         const criticalPromises = [
+            // Update key metrics - essential for overview
+            updateKeyMetrics(query).catch(error => {
+                console.error('Error updating key metrics:', error);
+                // Error state is handled within updateKeyMetrics
+            }),
             // Update top contributors (small visualization) - essential for overview
             updateContributorsOverview(query).catch(error => {
                 console.error('Error updating contributors overview:', error);
@@ -3519,6 +3524,11 @@ async function handleAnalyzeClick() {
         // PERFORMANCE OPTIMIZATION: Load data progressively in phases
         // Phase 1: First load critical data for the overview tab
         const criticalPromises = [
+            // Update key metrics - essential for overview
+            updateKeyMetrics(query).catch(error => {
+                console.error('Error updating key metrics:', error);
+                // Error state is handled within updateKeyMetrics
+            }),
             // Update top contributors (small visualization) - essential for overview
             updateContributorsOverview(query).catch(error => {
                 console.error('Error updating contributors overview:', error);

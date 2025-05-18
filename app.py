@@ -422,20 +422,25 @@ def get_timeseries():
     return jsonify(timeseries.to_dict('records'))
 
 @app.route('/api/top_contributors', methods=['GET'])
-def get_top_contributors():
+def get_top_contributors(query=None, limit=10):
  
     if data is None:
         return jsonify({'error': 'No data loaded'}), 400
     
-    query = request.args.get('query', '')
-    limit = int(request.args.get('limit', 10))
+    # If called as an API endpoint, get parameters from request
+    if query is None:
+        query = request.args.get('query', '')
+        limit = int(request.args.get('limit', 10))
     
     filtered_data = data[data['selftext'].str.contains(query, case=False, na=False) | 
                           data['title'].str.contains(query, case=False, na=False)]
     top_users = filtered_data['author'].value_counts().head(limit).reset_index()
     top_users.columns = ['author', 'count']
     
-    return jsonify(top_users.to_dict('records'))
+    # Return JSON if called as API endpoint, otherwise return the data
+    if request.path == '/api/top_contributors':
+        return jsonify(top_users.to_dict('records'))
+    return top_users.to_dict('records')
 
 @app.route('/api/network', methods=['GET'])
 def get_network():
@@ -1061,6 +1066,29 @@ def semantic_search(query, texts, top_k=5):
     top_indices = similarities.argsort()[-top_k:][::-1]
     return [(texts[i], similarities[i]) for i in top_indices]
 
+@app.route('/api/metrics', methods=['GET'])
+def get_metrics():
+    if data is None:
+        return jsonify({'error': 'No data loaded'}), 400
+    
+    query = request.args.get('query', '')
+    
+    # Filter data based on query
+    filtered_data = data[
+        data['selftext'].str.contains(query, case=False, na=False) |
+        data['title'].str.contains(query, case=False, na=False)
+    ]
+    
+    # Calculate metrics
+    metrics = {
+        'total_posts': len(filtered_data),
+        'unique_authors': filtered_data['author'].nunique(),
+        'avg_comments': filtered_data['num_comments'].mean(),
+        'time_span': (filtered_data['created_utc'].max() - filtered_data['created_utc'].min()).total_seconds() / (24 * 3600)
+    }
+    
+    return jsonify(metrics)
+
 @app.route('/api/ai_summary', methods=['GET'])
 def get_ai_summary():
     if data is None:
@@ -1077,8 +1105,9 @@ def get_ai_summary():
         ]
     
     # Get top words and authors
-    top_words = get_common_words()
-    top_authors = get_top_contributors()
+    # Pass the query parameter to ensure filtering by ticker symbol
+    top_words = get_common_words(query=query)
+    top_authors = get_top_contributors(query=query)
     
     # Format the summary text
     summary_text = f"""
@@ -1112,13 +1141,15 @@ def get_ai_summary():
     })
 
 @app.route('/api/common_words', methods=['GET'])
-def get_common_words():
+def get_common_words(query=None, limit=50):
 
     if data is None:
         return jsonify({'error': 'No data loaded'}), 400
     
-    query = request.args.get('query', '')
-    limit = int(request.args.get('limit', 50))
+    # If called as an API endpoint, get parameters from request
+    if query is None:
+        query = request.args.get('query', '')
+        limit = int(request.args.get('limit', 50))
     
     # Filter data based on query
     filtered_data = data
@@ -1143,7 +1174,10 @@ def get_common_words():
     sorted_indices = freqs.argsort()[::-1]
     result = [{'word': words[i], 'count': int(freqs[i])} for i in sorted_indices]
     
-    return jsonify(result)
+    # Return JSON if called as API endpoint, otherwise return the data
+    if request.path == '/api/common_words':
+        return jsonify(result)
+    return result
 
 @app.route('/api/dynamic_description', methods=['GET'])
 def get_dynamic_description():
@@ -1801,4 +1835,4 @@ if __name__ == '__main__':
         os.makedirs("./data", exist_ok=True)
         print("Created data directory. Please place your data.jsonl file in the ./data folder.")
     
-    app.run(debug=True) 
+    app.run(debug=True)
