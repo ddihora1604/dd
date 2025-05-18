@@ -74,6 +74,7 @@ async function updateSectionDescription(sectionId, descriptionElementSelector, c
         
         // Map of section IDs to user-friendly section titles
         const sectionTitles = {
+            'ai_insights': 'Social Media Insights',
             'data_story': 'Comprehensive Data Story',
             'word_cloud': 'Word Cloud',
             'contributors': 'Top Contributors',
@@ -134,6 +135,7 @@ async function updateSectionDescription(sectionId, descriptionElementSelector, c
         console.error(`Error updating description for ${sectionId}:`, error);
         // In case of error, restore the static description that was in the HTML
         const staticDescriptions = {
+            'ai_insights': 'Provides detailed AI-generated insights about social media trends, sentiment analysis, and key discussion themes from your search results.',
             'data_story': 'Creates a narrative analysis connecting key insights, trends, and patterns from your query into a comprehensive data story.',
             'word_cloud': 'Visualizes the most frequently occurring terms in your query results with size indicating prominence.',
             'contributors': 'Identifies the most active users posting content matching your search criteria.',
@@ -173,6 +175,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     
     // Map of section IDs to user-friendly section titles
     const sectionTitles = {
+        'ai_insights': 'Social Media Insights',
         'data_story': 'Comprehensive Data Story',
         'word_cloud': 'Word Cloud',
         'contributors': 'Top Contributors',
@@ -274,6 +277,9 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
         
         // Update dynamic descriptions for the overview sections first
         const overviewDescriptionPromises = [
+            updateSectionDescription('ai_insights', '#ai-insights-description'),
+            // Remove or comment out this line for the data story section
+            // updateSectionDescription('data_story', '#data-story-description'),
             updateSectionDescription('word_cloud', '#word-cloud-description'),
             updateSectionDescription('contributors', '#contributors-description')
         ];
@@ -492,24 +498,394 @@ document.addEventListener('DOMContentLoaded', function() {
 // Overview Section - AI Summary and Metrics
 async function updateOverview(query) {
     try {
-        // Update metrics
-        const metricsResponse = await fetch(`/api/ai_summary?query=${encodeURIComponent(query)}`);
-        const metricsData = await metricsResponse.json();
+        // Update AI summary with enhanced insights
+        const summaryResponse = await fetch(`/api/ai_summary?query=${encodeURIComponent(query)}`);
+        if (summaryResponse.ok) {
+            const summaryData = await summaryResponse.json();
+            
+            // Display model used and enhanced summary - the summary already contains HTML markup
+            document.getElementById('ai-summary').innerHTML = summaryData.summary;
+            
+            // Update metrics with enhanced data
+            const metrics = summaryData.metrics;
+            
+            // Basic metrics
+            document.getElementById('total-posts').textContent = metrics.total_posts || '-';
+            document.getElementById('unique-authors').textContent = metrics.unique_authors || '-';
+            document.getElementById('avg-comments').textContent = typeof metrics.avg_comments === 'number' ? 
+                metrics.avg_comments.toFixed(1) : metrics.avg_comments;
+            document.getElementById('time-span').textContent = metrics.days_span || '-';
+            
+            // Update metrics description with actual data from the query
+            const metricsDescriptionEl = document.getElementById('metrics-description');
+            if (metricsDescriptionEl) {
+                try {
+                    const keywordsList = metrics.top_keywords && metrics.top_keywords.length > 0 
+                        ? metrics.top_keywords.slice(0, 3).join(', ') 
+                        : '';
+                    
+                    // Create a specific description based on actual query results
+                    let description = `Showing ${metrics.total_posts} posts from ${metrics.unique_authors} unique authors`;
+                    if (keywordsList) {
+                        description += ` with popular keywords: ${keywordsList}`;
+                    }
+                    if (metrics.days_span) {
+                        description += `. Data spans ${metrics.days_span} days`;
+                        
+                        // Add post frequency insight
+                        const postsPerDay = (metrics.total_posts / metrics.days_span).toFixed(1);
+                        description += ` (approximately ${postsPerDay} posts per day)`;
+                    }
+                    if (typeof metrics.avg_comments === 'number') {
+                        description += ` with an average of ${metrics.avg_comments.toFixed(1)} comments per post`;
+                        
+                        // Contextual assessment of engagement level
+                        if (metrics.avg_comments > 30) {
+                            description += ` - indicating exceptionally high engagement`;
+                        } else if (metrics.avg_comments > 15) {
+                            description += ` - showing strong community interest`;
+                        } else if (metrics.avg_comments > 5) {
+                            description += ` - reflecting moderate discussion activity`;
+                        }
+                    }
+                    
+                    // Add author concentration insights if data available
+                    if (metrics.unique_authors && metrics.total_posts) {
+                        const postsPerAuthor = (metrics.total_posts / metrics.unique_authors).toFixed(1);
+                        description += `. On average, each author contributed ${postsPerAuthor} posts`;
+                        
+                        // Community type assessment
+                        if (postsPerAuthor > 3) {
+                            description += `, suggesting a core group of dedicated contributors`;
+                        } else if (postsPerAuthor < 1.2) {
+                            description += `, indicating a diverse community with broad participation`;
+                        }
+                    }
+                    
+                    // Add sentiment if available
+                    if (metrics.sentiment_distribution) {
+                        const sentiments = metrics.sentiment_distribution;
+                        const topSentiment = Object.entries(sentiments).sort((a, b) => b[1] - a[1])[0];
+                        if (topSentiment) {
+                            description += `. Conversation tone appears predominantly ${topSentiment[0].toLowerCase()}`;
+                        }
+                    }
+                    
+                    description += '.';
+                    
+                    // Update the DOM with the HTML-formatted description
+                    metricsDescriptionEl.innerHTML = `
+                        <div class="description-content">
+                            <h4 class="section-heading mb-3 text-primary">Key Metrics</h4>
+                            <p class="mb-2">${description}</p>
+                        </div>
+                    `;
+                } catch (err) {
+                    console.error('Failed to update metrics description:', err);
+                    // Keep the existing message if there's an error
+                }
+            }
+            
+            // Create extended metrics display
+            let metricsContainer = document.getElementById('metrics-container');
+            
+            // Clear any existing extended metrics (beyond the 4 main metrics)
+            // Preserve only the main metrics row with the basic stats
+            const mainMetricsRow = metricsContainer.querySelector('.row.g-3');
+            metricsContainer.innerHTML = '';
+            
+            // Re-add the main metrics row
+            if (mainMetricsRow) {
+                metricsContainer.appendChild(mainMetricsRow);
+            } else {
+                // Create a new main metrics row if it doesn't exist
+                const newMainRow = document.createElement('div');
+                newMainRow.className = 'row g-3';
+                newMainRow.innerHTML = `
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-posts">${metrics.total_posts || '-'}</div>
+                            <div class="stat-label">Total Posts</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" id="unique-authors">${metrics.unique_authors || '-'}</div>
+                            <div class="stat-label">Unique Authors</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" id="avg-comments">${typeof metrics.avg_comments === 'number' ? 
+                                metrics.avg_comments.toFixed(1) : metrics.avg_comments}</div>
+                            <div class="stat-label">Avg. Comments</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" id="time-span">${metrics.days_span || '-'}</div>
+                            <div class="stat-label">Days Span</div>
+                        </div>
+                    </div>
+                `;
+                metricsContainer.appendChild(newMainRow);
+            }
+            
+            // Add additional metrics rows if needed
+            if (metrics.top_keywords && metrics.top_keywords.length > 0) {
+                const keywordsRow = document.createElement('div');
+                keywordsRow.className = 'row mt-3';
+                keywordsRow.innerHTML = `
+                    <div class="col-12">
+                        <div class="stat-card">
+                            <div class="stat-label">Top Keywords</div>
+                            <div class="keyword-container">
+                                ${metrics.top_keywords.map(kw => 
+                                    `<span class="badge bg-primary me-1">${kw}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                metricsContainer.appendChild(keywordsRow);
+            }
+            
+            // Add top authors
+            if (metrics.top_authors) {
+                const authorsRow = document.createElement('div');
+                authorsRow.className = 'row mt-3';
+                authorsRow.innerHTML = `
+                    <div class="col-12">
+                        <div class="stat-card">
+                            <div class="stat-label">Top Authors</div>
+                            <div class="author-container">
+                                <ul class="list-group list-group-flush small">
+                                    ${Object.entries(metrics.top_authors).slice(0, 3).map(([author, count]) => 
+                                        `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                            ${author}
+                                            <span class="badge bg-primary rounded-pill">${count} posts</span>
+                                        </li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                metricsContainer.appendChild(authorsRow);
+            }
+            
+            // Add engagement trend if available
+            if (metrics.engagement_trend && Object.keys(metrics.engagement_trend).length > 0) {
+                const engagementRow = document.createElement('div');
+                engagementRow.className = 'row mt-3';
+                engagementRow.innerHTML = `
+                    <div class="col-12">
+                        <div class="stat-card">
+                            <div class="stat-label">Engagement Trend</div>
+                            <div id="engagement-trend-chart" style="height: 200px;"></div>
+                        </div>
+                    </div>
+                `;
+                metricsContainer.appendChild(engagementRow);
+                
+                // Create enhanced chart for engagement trend with proper labels
+                setTimeout(() => {
+                    const trendData = Object.entries(metrics.engagement_trend).map(([date, value]) => ({
+                        date: new Date(date),
+                        value: value
+                    })).sort((a, b) => a.date - b.date);
+                    
+                    if (trendData.length > 1) {
+                        const trendWidth = document.getElementById('engagement-trend-chart').clientWidth;
+                        const trendHeight = 200;
+                        
+                        // Define margins to accommodate axis labels - increase margins for better spacing
+                        const margin = {top: 15, right: 35, bottom: 60, left: 60};
+                        const width = trendWidth - margin.left - margin.right;
+                        const height = trendHeight - margin.top - margin.bottom;
+                        
+                        // Clear previous chart if any
+                        d3.select('#engagement-trend-chart').html('');
+                        
+                        const svg = d3.select('#engagement-trend-chart')
+                            .append('svg')
+                            .attr('width', trendWidth)
+                            .attr('height', trendHeight)
+                            .append('g')
+                            .attr('transform', `translate(${margin.left},${margin.top})`);
+                        
+                        // Create X and Y scales with proper domains
+                        const x = d3.scaleTime()
+                            .domain(d3.extent(trendData, d => d.date))
+                            .range([0, width]);
+                        
+                        const y = d3.scaleLinear()
+                            .domain([0, d3.max(trendData, d => d.value) * 1.1]) // Add 10% padding at the top
+                            .range([height, 0]);
+                        
+                        // Determine how many ticks to show based on data span
+                        const timeSpan = trendData[trendData.length - 1].date - trendData[0].date;
+                        const daySpan = timeSpan / (1000 * 60 * 60 * 24);
+                        
+                        // Choose appropriate date format and tick count based on date range
+                        let tickCount = 4; // Default to 4 ticks
+                        let dateFormat = '%b %Y'; // Default to month-year format
+                        
+                        if (daySpan <= 14) {
+                            // For spans under 2 weeks, show day-month
+                            dateFormat = '%d %b';
+                            tickCount = Math.min(5, daySpan);
+                        } else if (daySpan <= 60) {
+                            // For spans under 60 days, show abbreviated month
+                            dateFormat = '%b %d';
+                            tickCount = Math.min(5, Math.ceil(daySpan / 7)); // About one tick per week
+                        } else if (daySpan <= 365) {
+                            // For spans under a year, show month only
+                            dateFormat = '%b';
+                            tickCount = Math.min(6, Math.ceil(daySpan / 30)); // About one tick per month
+                        } else {
+                            // For spans over a year, show month-year
+                            tickCount = Math.min(6, Math.ceil(daySpan / 90)); // About one tick per quarter
+                        }
+                        
+                        // Add X axis with properly formatted dates - fewer ticks, larger rotation
+                        svg.append('g')
+                            .attr('transform', `translate(0,${height})`)
+                            .call(d3.axisBottom(x)
+                                .ticks(tickCount)
+                                .tickFormat(d3.timeFormat(dateFormat)))
+                            .selectAll('text')
+                            .style('text-anchor', 'end')
+                            .style('font-size', '10px')
+                            .attr('dx', '-.8em')
+                            .attr('dy', '.15em')
+                            .attr('transform', 'rotate(-45)'); // Increase rotation for better spacing
+                        
+                        // Add X axis label - position it lower for better spacing
+                        svg.append('text')
+                            .attr('transform', `translate(${width/2}, ${height + margin.bottom - 10})`)
+                            .style('text-anchor', 'middle')
+                            .style('font-size', '12px')
+                            .style('fill', 'var(--text-secondary)')
+                            .text('Date');
+                        
+                        // Add Y axis with grid lines - reduce the number of ticks
+                        svg.append('g')
+                            .call(d3.axisLeft(y)
+                                .ticks(4) // Fewer ticks to avoid overlap
+                                .tickFormat(d => d.toFixed(1)))
+                            .call(g => g.selectAll('.tick line')
+                                .clone()
+                                .attr('x2', width)
+                                .attr('stroke-opacity', 0.1));
+                        
+                        // Add Y axis label
+                        svg.append('text')
+                            .attr('transform', 'rotate(-90)')
+                            .attr('y', -margin.left +5)
+                            .attr('x', -height / 2)
+                            .attr('dy', '1em')
+                            .style('text-anchor', 'middle')
+                            .style('font-size', '12px')
+                            .style('fill', 'var(--text-secondary)')
+                            .text('Avg. Comments');
+                        
+                        // Create a gradient for the line
+                        const gradient = svg.append('defs')
+                            .append('linearGradient')
+                            .attr('id', 'engagement-gradient')
+                            .attr('gradientUnits', 'userSpaceOnUse')
+                            .attr('x1', 0)
+                            .attr('y1', 0)
+                            .attr('x2', 0)
+                            .attr('y2', height);
+                        
+                        gradient.append('stop')
+                            .attr('offset', '0%')
+                            .attr('stop-color', 'var(--primary-color)')
+                            .attr('stop-opacity', 1);
+                        
+                        gradient.append('stop')
+                            .attr('offset', '100%')
+                            .attr('stop-color', 'var(--primary-light)')
+                            .attr('stop-opacity', 0.7);
+                        
+                        // Add area under the line
+                        svg.append('path')
+                            .datum(trendData)
+                            .attr('fill', 'url(#engagement-gradient)')
+                            .attr('fill-opacity', 0.3)
+                            .attr('d', d3.area()
+                                .x(d => x(d.date))
+                                .y0(height)
+                                .y1(d => y(d.value))
+                            );
+                        
+                        // Add the line with smooth curve
+                        svg.append('path')
+                            .datum(trendData)
+                            .attr('fill', 'none')
+                            .attr('stroke', 'var(--primary-color)')
+                            .attr('stroke-width', 2.5)
+                            .attr('d', d3.line()
+                                .curve(d3.curveMonotoneX)
+                                .x(d => x(d.date))
+                                .y(d => y(d.value))
+                            );
+                        
+                        // Determine data point visibility based on density
+                        // For dense datasets, only show a subset of points
+                        let visiblePoints = trendData;
+                        if (trendData.length > 20) {
+                            // Create a subset of points to display based on significance
+                            const significantPoints = [];
+                            
+                            // Always include first and last points
+                            significantPoints.push(trendData[0]);
+                            significantPoints.push(trendData[trendData.length - 1]);
+                            
+                            // Find local maxima and minima
+                            for (let i = 1; i < trendData.length - 1; i++) {
+                                const prev = trendData[i-1].value;
+                                const curr = trendData[i].value;
+                                const next = trendData[i+1].value;
+                                
+                                // Include if it's a peak or valley
+                                if ((curr > prev && curr > next) || (curr < prev && curr < next)) {
+                                    significantPoints.push(trendData[i]);
+                                }
+                                
+                                // Include some regular samples for regular periods
+                                if (i % Math.ceil(trendData.length / 15) === 0) {
+                                    significantPoints.push(trendData[i]);
+                                }
+                            }
+                            
+                            // Sort points by date again
+                            visiblePoints = significantPoints.sort((a, b) => a.date - b.date);
+                        }
+                        
+                        // Add dots for selected data points
+                        svg.selectAll('.dot')
+                            .data(visiblePoints)
+                            .enter()
+                            .append('circle')
+                            .attr('class', 'dot')
+                            .attr('cx', d => x(d.date))
+                            .attr('cy', d => y(d.value))
+                            .attr('r', 3)
+                            .attr('fill', 'var(--primary-color)')
+                            .attr('stroke', '#fff')
+                            .attr('stroke-width', 1.5)
+                            .append('title')
+                            .text(d => `${d3.timeFormat('%b %d, %Y')(d.date)}: ${d.value.toFixed(1)} comments`);
+                    }
+                }, 100);
+            }
+        }
         
-        // Update metrics display
-        document.getElementById('total-posts').textContent = metricsData.metrics.total_posts;
-        document.getElementById('unique-authors').textContent = metricsData.metrics.unique_authors;
-        document.getElementById('avg-comments').textContent = metricsData.metrics.avg_comments.toFixed(1);
-        document.getElementById('time-span').textContent = metricsData.metrics.time_span.toFixed(1);
-        
-        // Update word cloud
-        await updateWordCloud(query);
-        
-        // Update contributors
+        // Update top contributors (simplified version for overview)
         await updateContributorsOverview(query);
-        
-        // Update data story
-        await generateDataStory(query);
         
     } catch (error) {
         console.error('Error updating overview:', error);
@@ -3342,6 +3718,9 @@ async function handleAnalyzeClick() {
         
         // Update dynamic descriptions for the overview sections first
         const overviewDescriptionPromises = [
+            updateSectionDescription('ai_insights', '#ai-insights-description'),
+            // Remove or comment out this line for the data story section
+            // updateSectionDescription('data_story', '#data-story-description'),
             updateSectionDescription('word_cloud', '#word-cloud-description'),
             updateSectionDescription('contributors', '#contributors-description')
         ];

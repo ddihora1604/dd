@@ -1139,8 +1139,18 @@
             <!-- Overview Tab -->
             <div class="tab-pane fade show active" id="overview-panel" role="tabpanel" aria-labelledby="overview-tab">
                 <div class="row">
+                    <!-- Social Media Insights Section -->
+                    <div class="col-md-8">
+                        <div class="chart-container" style="height: 100%;">
+                            <h3><i class="bi bi-bar-chart-line-fill"></i> Social Media Insights - Trends, Sentiments, and Discussions</h3>
+                            <div id="ai-summary" class="insight-card">
+                                <p class="text-muted">Enter a search query to generate social media insights.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Key Metrics Section -->
-                    <div class="col-12">
+                    <div class="col-md-4">
                         <div class="chart-container" style="height: 100%;">
                             <h3><i class="bi bi-clipboard-data-fill"></i> Key Metrics</h3>
                             <div class="alert alert-info mb-3" id="metrics-description">
@@ -1148,25 +1158,25 @@
                             </div>
                             <div id="metrics-container">
                                 <div class="row g-3">
-                                    <div class="col-6 col-md-3">
+                                    <div class="col-6">
                                         <div class="stat-card">
                                             <div class="stat-value" id="total-posts">-</div>
                                             <div class="stat-label">Total Posts</div>
                                         </div>
                                     </div>
-                                    <div class="col-6 col-md-3">
+                                    <div class="col-6">
                                         <div class="stat-card">
                                             <div class="stat-value" id="unique-authors">-</div>
                                             <div class="stat-label">Unique Authors</div>
                                         </div>
                                     </div>
-                                    <div class="col-6 col-md-3">
+                                    <div class="col-6">
                                         <div class="stat-card">
                                             <div class="stat-value" id="avg-comments">-</div>
                                             <div class="stat-label">Avg. Comments</div>
                                         </div>
                                     </div>
-                                    <div class="col-6 col-md-3">
+                                    <div class="col-6">
                                         <div class="stat-card">
                                             <div class="stat-value" id="time-span">-</div>
                                             <div class="stat-label">Days Span</div>
