@@ -11,3 +11,4 @@ umap-learn
 scipy
 google-generativeai
 nltk
+gunicorn
