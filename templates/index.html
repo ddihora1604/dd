@@ -1139,23 +1139,10 @@
             <!-- Overview Tab -->
             <div class="tab-pane fade show active" id="overview-panel" role="tabpanel" aria-labelledby="overview-tab">
                 <div class="row">
-                    <!-- Social Media Insights Section -->
-                    <div class="col-md-8">
-                        <div class="chart-container" style="height: 100%;">
-                            <h3><i class="bi bi-bar-chart-line-fill"></i> Social Media Insights - Trends, Sentiments, and Discussions</h3>
-                            <div id="ai-summary" class="insight-card">
-                                <p class="text-muted">Enter a search query to generate social media insights.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Key Metrics Section -->
-                    <div class="col-md-4">
-                        <div class="chart-container" style="height: 100%;">
+                    <div class="col-12">
+                        <div class="chart-container">
                             <h3><i class="bi bi-clipboard-data-fill"></i> Key Metrics</h3>
-                            <div class="alert alert-info mb-3" id="metrics-description">
-                                <i class="bi bi-info-circle"></i> Key statistics about posts, authors, engagement, and time span for your query results.
-                            </div>
                             <div id="metrics-container">
                                 <div class="row g-3">
                                     <div class="col-6">
@@ -1194,9 +1181,7 @@
                     <div class="col-md-6 d-flex">
                         <div class="chart-container w-100">
                             <h3><i class="bi bi-cloud"></i> Word Cloud</h3>
-                            <div class="alert alert-info mb-3" id="word-cloud-description">
-                                <i class="bi bi-info-circle"></i> Highlights the most frequently occurring terms in your query, with size reflecting their prominence in the conversation.
-                            </div>
+
                             <div id="word-cloud" class="flex-grow-1"></div>
                         </div>
                     </div>
@@ -1205,9 +1190,7 @@
                     <div class="col-md-6 d-flex">
                         <div class="chart-container w-100">
                             <h3><i class="bi bi-people-fill"></i> Top Contributors</h3>
-                            <div class="alert alert-info mb-3" id="contributors-description">
-                                <i class="bi bi-info-circle"></i> Identifies the most active users posting content, which matches your search criteria.
-                            </div>
+
                             <div id="contributors-overview" class="flex-grow-1"></div>
                         </div>
                     </div>
@@ -1218,9 +1201,7 @@
                     <div class="col-12">
                         <div class="chart-container">
                             <h3><i class="bi bi-journal-text"></i> A Comprehensive Data Story</h3>
-                            <div class="alert alert-info mb-3" id="data-story-description">
-                                <i class="bi bi-info-circle"></i> Creates a narrative analysis connecting key insights, trends, and patterns from your query into a comprehensive data story.
-                            </div>
+
                             <div id="data-story" class="card">
                                 
                             </div>
@@ -1233,18 +1214,14 @@
             <div class="tab-pane fade" id="timeseries-panel" role="tabpanel" aria-labelledby="timeseries-tab">
                 <div class="chart-container">
                     <h3><i class="bi bi-activity"></i> Time Series Analysis</h3>
-                    <div class="alert alert-info mb-3" id="timeseries-description">
-                        <i class="bi bi-info-circle"></i> Tracks post volume over time to reveal when discussions peaked, declined, or remained steady.
-                    </div>
+
                     
                     <div id="timeseries-chart" style="height: 650px; width: 100%; position: relative;"></div>
                 </div>
                 
                 <div class="chart-container mt-5 pb-4">
                     <h3><i class="bi bi-hourglass-split"></i> Topic Evolution Over Time</h3>
-                    <div class="alert alert-info mb-3" id="topic-evolution-description">
-                        <i class="bi bi-info-circle"></i> Shows how conversation themes and topics change in prominence across different time periods.
-                    </div>
+
                     
                     <div id="topic-evolution-chart" style="height: 650px; width: 100%; position: relative;"></div>
                 </div>
@@ -1256,9 +1233,7 @@
                     <div class="col-12">
                         <div class="chart-container">
                             <h3><i class="bi bi-pie-chart-fill"></i> Community Distribution</h3>
-                            <div class="alert alert-info mb-3" id="community-distribution-description">
-                                <i class="bi bi-info-circle"></i> Shows the relative proportions of different communities or subreddits represented in your search results.
-                            </div>
+
                             <div id="community-distribution" style="height: 600px; padding: 20px; margin-bottom: 20px; display: flex; flex-direction: row; justify-content: center;"></div>
                             
                         </div>
@@ -1270,9 +1245,7 @@
             <div class="tab-pane fade" id="topics-panel" role="tabpanel" aria-labelledby="topics-tab">
                 <div class="chart-container">
                     <h3><i class="bi bi-collection-fill"></i> Topic Analysis</h3>
-                    <div class="alert alert-info mb-3" id="topics-description">
-                        <i class="bi bi-info-circle"></i> Identifies distinct topics within the content to reveal key themes.
-                    </div>
+
                     <div class="row align-items-end mb-4">
                         <div class="col-md-8">
                             <label for="topics-count" class="form-label fw-medium">Number of Topics: <span id="topics-count-value">5</span></label>
@@ -1292,9 +1265,7 @@
             <div class="tab-pane fade" id="semantic-map-panel" role="tabpanel" aria-labelledby="semantic-map-tab">
                 <div class="chart-container">
                     <h3><i class="bi bi-geo-alt-fill"></i> Semantic Topic Map</h3>
-                    <div class="alert alert-info mb-3" id="semantic-map-description">
-                        <i class="bi bi-info-circle"></i> Creates a 2D visualization where posts are positioned by semantic similarity, revealing content relationships.
-                    </div>
+
                     
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -1400,9 +1371,7 @@
                     <div class="col-md-12">
                         <div class="chart-container">
                             <h3><i class="bi bi-people-fill"></i> Coordinated Post Groups</h3>
-                            <div class="alert alert-info mb-3">
-                                <i class="bi bi-info-circle"></i> Groups of similar posts that appeared within a short time window, suggesting possible coordination.
-                            </div>
+
                             <div class="mb-4">
                                 <div class="row controls-row">
                                     <div class="col-md-6">
@@ -1607,4 +1576,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

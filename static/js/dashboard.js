@@ -13,152 +13,16 @@ function showLoading(show) {
     }
 }
 
-// Function to get dynamic description for a section
+// Function to get dynamic description for a section - disabled
 async function getDynamicDescription(section, query, context = {}) {
-    try {
-        // Convert context object to JSON string
-        const contextStr = JSON.stringify(context);
-        
-        // Make API call to get dynamic description
-        const response = await fetch(`/api/dynamic_description?section=${section}&query=${encodeURIComponent(query)}&data_context=${encodeURIComponent(contextStr)}`);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to fetch description: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-    } catch (error) {
-        console.error(`Error getting dynamic description for ${section}:`, error);
-        
-    }
+    // This function has been disabled to prevent errors with AI-generated descriptions
+    return "";
 }
 
-// Function to update section description
+// Function to update section description - disabled
 async function updateSectionDescription(sectionId, descriptionElementSelector, context = {}) {
-    if (!activeQuery) return; // Don't update if no query is active
-    
-    // Only proceed with dynamic description for the data_story section
-    if (sectionId !== 'data_story') {
-        const descriptionElement = document.querySelector(descriptionElementSelector);
-        if (!descriptionElement) return;
-        const sectionTitle = sectionTitles[sectionId] || sectionId.replace(/_/g, ' ');
-        const staticDescriptions = {
-            'ai_insights': 'Provides detailed AI-generated insights about social media trends, sentiment analysis, and key discussion themes from your search results.',
-            'data_story': 'Creates a narrative analysis connecting key insights, trends, and patterns from your query into a comprehensive data story.',
-            'word_cloud': 'Visualizes the most frequently occurring terms in your query results with size indicating prominence.',
-            'contributors': 'Identifies the most active users posting content matching your search criteria.',
-            'timeseries': 'Tracks post volume over time to reveal when discussions peaked, declined, or remained steady.',
-            'topic_evolution': 'Shows how conversation themes and topics change in prominence across different time periods.',
-            'network': 'Maps connections between users based on their interactions, revealing community structure and influence patterns.',
-            'topics': 'Identifies distinct topics within the content using Latent Dirichlet Allocation (LDA) to reveal key themes.',
-            'semantic_map': 'Creates a 2D visualization where posts are positioned by semantic similarity, revealing content relationships.',
-            'coordinated': 'Detects potentially coordinated posting behavior by identifying similar content posted within a short time window.',
-            'coordinated_groups': 'Groups posts that share similar content and were created within the same time window.',
-            'community_distribution': 'Shows the relative proportions of different communities or subreddits represented in your search results.'
-        };
-        if (staticDescriptions[sectionId]) {
-            descriptionElement.innerHTML = `
-                <div class="description-content">
-                    <h4 class="section-heading mb-3 text-primary">${sectionTitle}</h4>
-                    <p class="mb-2">${staticDescriptions[sectionId]}</p>
-                </div>
-            `;
-        }
-        return; // Exit the function for excluded sections
-    }
-    
-    try {
-        const descriptionElement = document.querySelector(descriptionElementSelector);
-        if (!descriptionElement) return;
-        
-        // Map of section IDs to user-friendly section titles
-        const sectionTitles = {
-            'ai_insights': 'Social Media Insights',
-            'data_story': 'Comprehensive Data Story',
-            'word_cloud': 'Word Cloud',
-            'contributors': 'Top Contributors',
-            'metrics': 'Key Metrics',
-            'timeseries': 'Time Series Analysis',
-            'topic_evolution': 'Topic Evolution',
-            'network': 'User Network',
-            'topics': 'Topic Analysis',
-            'semantic_map': 'Semantic Map',
-            'coordinated': 'Coordinated Behavior',
-            'coordinated_groups': 'Coordinated Content Groups',
-            'community_distribution': 'Community Distribution'
-        };
-        
-        const sectionTitle = sectionTitles[sectionId] || sectionId.replace(/_/g, ' ');
-        
-        // Show loading state with specific section title
-        descriptionElement.innerHTML = `
-            <div class="description-content">
-                <div class="d-flex align-items-center">
-                    <span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span>
-                    <h4 class="section-heading mb-0">Loading ${sectionTitle}...</h4>
-                </div>
-            </div>
-        `;
-        
-        // Get dynamic description
-        const description = await getDynamicDescription(sectionId, activeQuery, context);
-        
-        // Update the description element - the description already contains HTML formatting
-        descriptionElement.innerHTML = description;
-        
-        // Apply some additional styling to ensure good presentation
-        const descriptionContent = descriptionElement.querySelector('.description-content');
-        if (descriptionContent) {
-            // Add styles for better readability
-            descriptionContent.querySelectorAll('h4').forEach(heading => {
-                heading.classList.add('section-heading', 'mb-3', 'text-primary');
-            });
-            
-            descriptionContent.querySelectorAll('h5').forEach(subheading => {
-                subheading.classList.add('subsection-heading', 'mb-2', 'mt-3', 'text-secondary');
-            });
-            
-            descriptionContent.querySelectorAll('ul, ol').forEach(list => {
-                list.classList.add('my-2');
-            });
-            
-            descriptionContent.querySelectorAll('li').forEach(item => {
-                item.classList.add('mb-1');
-            });
-            
-            descriptionContent.querySelectorAll('p').forEach(paragraph => {
-                paragraph.classList.add('mb-2');
-            });
-        }
-    } catch (error) {
-        console.error(`Error updating description for ${sectionId}:`, error);
-        // In case of error, restore the static description that was in the HTML
-        const staticDescriptions = {
-            'ai_insights': 'Provides detailed AI-generated insights about social media trends, sentiment analysis, and key discussion themes from your search results.',
-            'data_story': 'Creates a narrative analysis connecting key insights, trends, and patterns from your query into a comprehensive data story.',
-            'word_cloud': 'Visualizes the most frequently occurring terms in your query results with size indicating prominence.',
-            'contributors': 'Identifies the most active users posting content matching your search criteria.',
-            'timeseries': 'Tracks post volume over time to reveal when discussions peaked, declined, or remained steady.',
-            'topic_evolution': 'Shows how conversation themes and topics change in prominence across different time periods.',
-            'network': 'Maps connections between users based on their interactions, revealing community structure and influence patterns.',
-            'topics': 'Identifies distinct topics within the content using Latent Dirichlet Allocation (LDA) to reveal key themes.',
-            'semantic_map': 'Creates a 2D visualization where posts are positioned by semantic similarity, revealing content relationships.',
-            'coordinated': 'Detects potentially coordinated posting behavior by identifying similar content posted within a short time window.',
-            'coordinated_groups': 'Groups posts that share similar content and were created within the same time window.',
-            'community_distribution': 'Shows the relative proportions of different communities or subreddits represented in your search results.'
-        };
-        
-        // Fall back to the static description for this section
-        if (staticDescriptions[sectionId]) {
-            descriptionElement.innerHTML = `
-                <div class="description-content">
-                    <h4 class="section-heading mb-3 text-primary">${sectionTitle}</h4>
-                    <p class="mb-2">${staticDescriptions[sectionId]}</p>
-                </div>
-            `;
-        }
-    }
+    // This function has been disabled to prevent errors with AI-generated descriptions
+    return;
 }
 
 // Analysis button click handler
@@ -190,26 +54,8 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
         'community_distribution': 'Community Distribution'
     };
     
-    // Update all description areas to show loading state before starting analysis
-    const descriptionAreas = [
-        {id: 'data-story-description', section: 'data_story'}
-    ];
-    
-    // Replace static descriptions with loading indicators using specific section titles
-    descriptionAreas.forEach(item => {
-        const element = document.getElementById(item.id);
-        if (element) {
-            const sectionTitle = sectionTitles[item.section] || item.section.replace(/_/g, ' ');
-            element.innerHTML = `
-                <div class="description-content">
-                    <div class="d-flex align-items-center">
-                        <span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span>
-                        <h4 class="section-heading mb-0">Loading ${sectionTitle}...</h4>
-                    </div>
-                </div>
-            `;
-        }
-    });
+        // Description areas loading has been disabled
+    // No descriptions to update
     
     // Update the semantic map container and topic clusters with loading indicators
     document.getElementById('semantic-map-container').innerHTML = `
@@ -226,66 +72,54 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     showLoading(true);
     
     try {
-        // Clear all previous visualizations first
-        document.getElementById('topics-container').innerHTML = '';
-        document.getElementById('contributors-overview').innerHTML = '';
+        // Clear all previous visualizations first - with null checks
+        const clearElement = (id, defaultContent = '') => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.innerHTML = defaultContent;
+            }
+        };
+        
+        clearElement('topics-container');
+        clearElement('contributors-overview');
         // Remove reference to network-graph which is no longer needed
-        document.getElementById('coordinated-groups').innerHTML = '';
-        document.getElementById('word-cloud').innerHTML = '';
-        document.getElementById('timeseries-chart').innerHTML = '';
-        document.getElementById('ai-summary').innerHTML = '';
-        document.getElementById('topic-evolution-chart').innerHTML = '';
-        document.getElementById('semantic-map-container').innerHTML = '';
-        document.getElementById('point-details').innerHTML = '<p class="text-muted">Click on a point to see details</p>';
-        document.getElementById('topic-clusters').innerHTML = '<p class="text-muted">Loading topic clusters...</p>';
-        document.getElementById('community-distribution').innerHTML = '';
+        clearElement('coordinated-groups');
+        clearElement('word-cloud');
+        clearElement('timeseries-chart');
+        clearElement('ai-summary'); // This element might not exist
+        clearElement('topic-evolution-chart');
+        clearElement('semantic-map-container');
+        clearElement('point-details', '<p class="text-muted">Click on a point to see details</p>');
+        clearElement('topic-clusters', '<p class="text-muted">Loading topic clusters...</p>');
+        clearElement('community-distribution');
         
         // Reset data story with placeholder
-        document.getElementById('data-story').innerHTML = `
+        clearElement('data-story', `
             <div class="card-body">
                 <p class="text-muted">Enter a search query to generate a data story or case study.</p>
             </div>
-        `;
+        `);
         
         // PERFORMANCE OPTIMIZATION: Load data progressively in phases
         // Phase 1: First load critical data for the overview tab
         const criticalPromises = [
-            // Update AI summary - essential for overview
-            updateOverview(query).catch(error => {
-                console.error('Error updating overview:', error);
-                document.getElementById('ai-summary').innerHTML = `
-                    <div class="ai-summary-content">
-                        <h3>Error Loading Data</h3>
-                        <p class="text-danger">There was a problem loading the analysis data. Please try again or modify your query.</p>
-                    </div>
-                `;
-            }),
             // Update top contributors (small visualization) - essential for overview
             updateContributorsOverview(query).catch(error => {
                 console.error('Error updating contributors overview:', error);
-                document.getElementById('contributors-overview').innerHTML = '<p class="text-danger">Error loading contributors data</p>';
+                clearElement('contributors-overview', '<p class="text-danger">Error loading contributors data</p>');
             }),
             // Update word cloud - lightweight visualization for overview
             updateWordCloud(query).catch(error => {
                 console.error('Error updating word cloud:', error);
-                document.getElementById('word-cloud').innerHTML = '<p class="text-danger">Error loading word cloud data</p>';
+                clearElement('word-cloud', '<p class="text-danger">Error loading word cloud data</p>');
             }),
         ];
 
         // Wait for critical components first
         await Promise.allSettled(criticalPromises);
         
-        // Update dynamic descriptions for the overview sections first
-        const overviewDescriptionPromises = [
-            updateSectionDescription('ai_insights', '#ai-insights-description'),
-            // Remove or comment out this line for the data story section
-            // updateSectionDescription('data_story', '#data-story-description'),
-            updateSectionDescription('word_cloud', '#word-cloud-description'),
-            updateSectionDescription('contributors', '#contributors-description')
-        ];
-        
-        // Process overview descriptions in the background
-        Promise.allSettled(overviewDescriptionPromises);
+        // Description updates have been disabled
+        // No descriptions to update
         
         // Hide the main loading spinner as critical content is loaded
         showLoading(false);
@@ -294,13 +128,13 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
         analysisPerformed = true;
         
         // PERFORMANCE OPTIMIZATION: Create placeholder loading indicators for remaining components
-        document.getElementById('timeseries-chart').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading time series analysis...</div>';
-        document.getElementById('topic-evolution-chart').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic evolution analysis...</div>';
+        clearElement('timeseries-chart', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading time series analysis...</div>');
+        clearElement('topic-evolution-chart', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic evolution analysis...</div>');
         // Remove reference to network-graph which no longer exists
-        document.getElementById('topics-container').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic analysis...</div>';
-        document.getElementById('coordinated-groups').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading coordinated behavior analysis...</div>';
-        document.getElementById('community-distribution').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading community distribution...</div>';
-        document.getElementById('semantic-map-container').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading semantic map analysis...</div>';
+        clearElement('topics-container', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic analysis...</div>');
+        clearElement('coordinated-groups', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading coordinated behavior analysis...</div>');
+        clearElement('community-distribution', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading community distribution...</div>');
+        clearElement('semantic-map-container', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading semantic map analysis...</div>');
         
         // Phase 2: Load the data story and time series (medium weight)
         // Generate a data story based on the analyzed results
@@ -311,13 +145,10 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                 // Update time series (important for overview)
                 await updateTimeSeries(query).catch(error => {
                     console.error('Error updating time series:', error);
-                    document.getElementById('timeseries-chart').innerHTML = '<p class="text-danger">Error loading time series data</p>';
+                    clearElement('timeseries-chart', '<p class="text-danger">Error loading time series data</p>');
                 });
                 
-                // Update timeseries description after data is loaded
-                updateSectionDescription('timeseries', '#timeseries-description', {
-                    dataPoints: document.querySelectorAll('#timeseries-chart circle.dot').length
-                });
+                // Description updates have been disabled
                 
                 // Phase 3: Now load the remaining heavier visualizations in the background
                 // This allows the user to start interacting with the dashboard while heavy visualizations load
@@ -325,40 +156,30 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
                     // Process remaining heavy visualizations in sequence to reduce load
                     try {
                         await updateTopics(query);
-                        // Update topics description after data is loaded
-                        updateSectionDescription('topics', '#topics-description', {
-                            topicCount: document.getElementById('topics-count').value
-                        });
+                        // Description updates have been disabled
                     } catch (error) {
                         console.error('Error updating topics:', error);
-                        document.getElementById('topics-container').innerHTML = '<p class="text-danger">Error loading topics data</p>';
+                        clearElement('topics-container', '<p class="text-danger">Error loading topics data</p>');
                     }
                     
                     // Network Analysis section removed
                     
                     try {
                         await updateCoordinatedBehavior();
-                        // Update coordinated behavior descriptions after data is loaded
-                        updateSectionDescription('coordinated', '#coordinated-description', {
-                            timeWindow: document.getElementById('time-window').value,
-                            similarityThreshold: document.getElementById('similarity-threshold').value
-                        });
+                        // Description updates have been disabled
                     } catch (error) {
                         console.error('Error updating coordinated behavior:', error);
                         // Remove reference to coordinated-graph which no longer exists
-                        document.getElementById('coordinated-groups').innerHTML = '<p class="text-danger">Error loading coordinated behavior data</p>';
+                        clearElement('coordinated-groups', '<p class="text-danger">Error loading coordinated behavior data</p>');
                     }
                     
                     // Update Community Distribution pie chart
                     try {
                         await updateCommunityDistributionPieChart(query);
-                        // Update community distribution description
-                        updateSectionDescription('community_distribution', '#community-distribution-description', {
-                            communities: document.querySelectorAll('#community-distribution path').length
-                        });
+                        // Description updates have been disabled
                     } catch (error) {
                         console.error('Error updating community distribution:', error);
-                        document.getElementById('community-distribution').innerHTML = '<p class="text-danger">Error loading community distribution data</p>';
+                        clearElement('community-distribution', '<p class="text-danger">Error loading community distribution data</p>');
                     }
                     
                     console.log('All visualizations loaded');
@@ -3667,66 +3488,54 @@ async function handleAnalyzeClick() {
     showLoading(true);
     
     try {
-        // Clear all previous visualizations first
-        document.getElementById('topics-container').innerHTML = '';
-        document.getElementById('contributors-overview').innerHTML = '';
+        // Clear all previous visualizations first - with null checks
+        const clearElement = (id, defaultContent = '') => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.innerHTML = defaultContent;
+            }
+        };
+        
+        clearElement('topics-container');
+        clearElement('contributors-overview');
         // Remove reference to network-graph which is no longer needed
-        document.getElementById('coordinated-groups').innerHTML = '';
-        document.getElementById('word-cloud').innerHTML = '';
-        document.getElementById('timeseries-chart').innerHTML = '';
-        document.getElementById('ai-summary').innerHTML = '';
-        document.getElementById('topic-evolution-chart').innerHTML = '';
-        document.getElementById('semantic-map-container').innerHTML = '';
-        document.getElementById('point-details').innerHTML = '<p class="text-muted">Click on a point to see details</p>';
-        document.getElementById('topic-clusters').innerHTML = '<p class="text-muted">Loading topic clusters...</p>';
-        document.getElementById('community-distribution').innerHTML = '';
+        clearElement('coordinated-groups');
+        clearElement('word-cloud');
+        clearElement('timeseries-chart');
+        clearElement('ai-summary'); // This element might not exist
+        clearElement('topic-evolution-chart');
+        clearElement('semantic-map-container');
+        clearElement('point-details', '<p class="text-muted">Click on a point to see details</p>');
+        clearElement('topic-clusters', '<p class="text-muted">Loading topic clusters...</p>');
+        clearElement('community-distribution');
         
         // Reset data story with placeholder
-        document.getElementById('data-story').innerHTML = `
+        clearElement('data-story', `
             <div class="card-body">
                 <p class="text-muted">Enter a search query to generate a data story or case study.</p>
             </div>
-        `;
+        `);
         
         // PERFORMANCE OPTIMIZATION: Load data progressively in phases
         // Phase 1: First load critical data for the overview tab
         const criticalPromises = [
-            // Update AI summary - essential for overview
-            updateOverview(query).catch(error => {
-                console.error('Error updating overview:', error);
-                document.getElementById('ai-summary').innerHTML = `
-                    <div class="ai-summary-content">
-                        <h3>Error Loading Data</h3>
-                        <p class="text-danger">There was a problem loading the analysis data. Please try again or modify your query.</p>
-                    </div>
-                `;
-            }),
             // Update top contributors (small visualization) - essential for overview
             updateContributorsOverview(query).catch(error => {
                 console.error('Error updating contributors overview:', error);
-                document.getElementById('contributors-overview').innerHTML = '<p class="text-danger">Error loading contributors data</p>';
+                clearElement('contributors-overview', '<p class="text-danger">Error loading contributors data</p>');
             }),
             // Update word cloud - lightweight visualization for overview
             updateWordCloud(query).catch(error => {
                 console.error('Error updating word cloud:', error);
-                document.getElementById('word-cloud').innerHTML = '<p class="text-danger">Error loading word cloud data</p>';
+                clearElement('word-cloud', '<p class="text-danger">Error loading word cloud data</p>');
             }),
         ];
 
         // Wait for critical components first
         await Promise.allSettled(criticalPromises);
         
-        // Update dynamic descriptions for the overview sections first
-        const overviewDescriptionPromises = [
-            updateSectionDescription('ai_insights', '#ai-insights-description'),
-            // Remove or comment out this line for the data story section
-            // updateSectionDescription('data_story', '#data-story-description'),
-            updateSectionDescription('word_cloud', '#word-cloud-description'),
-            updateSectionDescription('contributors', '#contributors-description')
-        ];
-        
-        // Process overview descriptions in the background
-        Promise.allSettled(overviewDescriptionPromises);
+        // Description updates have been disabled
+        // No descriptions to update
         
         // Hide the main loading spinner as critical content is loaded
         showLoading(false);
@@ -3735,13 +3544,13 @@ async function handleAnalyzeClick() {
         analysisPerformed = true;
         
         // PERFORMANCE OPTIMIZATION: Create placeholder loading indicators for remaining components
-        document.getElementById('timeseries-chart').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading time series analysis...</div>';
-        document.getElementById('topic-evolution-chart').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic evolution analysis...</div>';
+        clearElement('timeseries-chart', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading time series analysis...</div>');
+        clearElement('topic-evolution-chart', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic evolution analysis...</div>');
         // Remove reference to network-graph which no longer exists
-        document.getElementById('topics-container').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic analysis...</div>';
-        document.getElementById('coordinated-groups').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading coordinated behavior analysis...</div>';
-        document.getElementById('community-distribution').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading community distribution...</div>';
-        document.getElementById('semantic-map-container').innerHTML = '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading semantic map analysis...</div>';
+        clearElement('topics-container', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading topic analysis...</div>');
+        clearElement('coordinated-groups', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading coordinated behavior analysis...</div>');
+        clearElement('community-distribution', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading community distribution...</div>');
+        clearElement('semantic-map-container', '<div class="section-loading"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading semantic map analysis...</div>');
         
         // Phase 2: Load the data story and time series (medium weight)
         // Generate a data story based on the analyzed results
@@ -3752,7 +3561,7 @@ async function handleAnalyzeClick() {
                 // Update time series (important for overview)
                 await updateTimeSeries(query).catch(error => {
                     console.error('Error updating time series:', error);
-                    document.getElementById('timeseries-chart').innerHTML = '<p class="text-danger">Error loading time series data</p>';
+                    clearElement('timeseries-chart', '<p class="text-danger">Error loading time series data</p>');
                 });
                 
                 // Update topic evolution chart
@@ -3767,10 +3576,7 @@ async function handleAnalyzeClick() {
                     document.getElementById('semantic-map-container').innerHTML = '<p class="text-danger">Error loading semantic map data</p>';
                 });
                 
-                // Update timeseries description after data is loaded
-                updateSectionDescription('timeseries', '#timeseries-description', {
-                    dataPoints: document.querySelectorAll('#timeseries-chart circle.dot').length
-                });
+                // Description updates have been disabled
                 
                 // Phase 3: Now load the remaining heavier visualizations in the background
                 // This allows the user to start interacting with the dashboard while heavy visualizations load
@@ -3778,13 +3584,10 @@ async function handleAnalyzeClick() {
                     // Process remaining heavy visualizations in sequence to reduce load
                     try {
                         await updateTopics(query);
-                        // Update topics description after data is loaded
-                        updateSectionDescription('topics', '#topics-description', {
-                            topicCount: document.getElementById('topics-count').value
-                        });
+                        // Description updates have been disabled
                     } catch (error) {
                         console.error('Error updating topics:', error);
-                        document.getElementById('topics-container').innerHTML = '<p class="text-danger">Error loading topics data</p>';
+                        clearElement('topics-container', '<p class="text-danger">Error loading topics data</p>');
                     }
                     
                     try {
@@ -3803,15 +3606,11 @@ async function handleAnalyzeClick() {
                     
                     try {
                         await updateCoordinatedBehavior();
-                        // Update coordinated behavior descriptions after data is loaded
-                        updateSectionDescription('coordinated', '#coordinated-description', {
-                            timeWindow: document.getElementById('time-window').value,
-                            similarityThreshold: document.getElementById('similarity-threshold').value
-                        });
+                        // Description updates have been disabled
                     } catch (error) {
                         console.error('Error updating coordinated behavior:', error);
                         // Remove reference to coordinated-graph which no longer exists
-                        document.getElementById('coordinated-groups').innerHTML = '<p class="text-danger">Error loading coordinated behavior data</p>';
+                        clearElement('coordinated-groups', '<p class="text-danger">Error loading coordinated behavior data</p>');
                     }
                     
                     // Update pie chart of contributors
@@ -3819,7 +3618,7 @@ async function handleAnalyzeClick() {
                         await updateCommunityDistributionPieChart(query);
                     } catch (error) {
                         console.error('Error updating community distribution:', error);
-                        document.getElementById('community-distribution').innerHTML = '<p class="text-danger">Error loading community distribution data</p>';
+                        clearElement('community-distribution', '<p class="text-danger">Error loading community distribution data</p>');
                     }
                     
                     console.log('All visualizations loaded');
