@@ -1412,14 +1412,20 @@ def chatbot_response():
         filtered_data = None
         global data  # Explicitly reference the global data variable
         if data is not None:
-            # Use content_text instead of selftext for filtering
+            # First try to filter using content_text (normalized field)
             if 'content_text' in data.columns:
                 filtered_data = data[data['content_text'].str.contains(query, case=False, na=False) | 
                                   data['title'].str.contains(query, case=False, na=False)]
-            else:
-                # Fallback to selftext if content_text doesn't exist
+            # Fallback to selftext if content_text doesn't exist
+            elif 'selftext' in data.columns:
                 filtered_data = data[data['selftext'].str.contains(query, case=False, na=False) | 
                                   data['title'].str.contains(query, case=False, na=False)]
+            else:
+                # Neither field exists, return an error
+                return jsonify({'error': 'Dataset missing required content fields'}), 500
+        else:
+            # Data not loaded, return an error
+            return jsonify({'error': 'Dataset not loaded'}), 500
         
         # Prepare context from filtered data
         context = ''
@@ -1436,17 +1442,18 @@ def chatbot_response():
                 context += f"- Time span: {time_span} days\n"
             
             # Add top keywords (using simple word frequency)
-            # Use content_text instead of selftext if available
+            # Determine which content column to use
             content_column = 'content_text' if 'content_text' in filtered_data.columns else 'selftext'
-            words = ' '.join(filtered_data[content_column].fillna('') + ' ' + filtered_data['title'].fillna('')).lower()
-            words = re.findall(r'\b[a-z]{4,}\b', words)
-            word_freq = Counter(words)
-            # Remove common words
-            for word in stop_words:
-                word_freq.pop(word, None)
-            top_keywords = [word for word, _ in word_freq.most_common(5)]
-            if top_keywords:
-                context += f"- Top keywords: {', '.join(top_keywords)}\n"
+            if content_column in filtered_data.columns:
+                words = ' '.join(filtered_data[content_column].fillna('') + ' ' + filtered_data['title'].fillna('')).lower()
+                words = re.findall(r'\b[a-z]{4,}\b', words)
+                word_freq = Counter(words)
+                # Remove common words
+                for word in stop_words:
+                    word_freq.pop(word, None)
+                top_keywords = [word for word, _ in word_freq.most_common(5)]
+                if top_keywords:
+                    context += f"- Top keywords: {', '.join(top_keywords)}\n"
         
         if not has_gemini or not GEMINI_API_KEY:
             return jsonify({'error': 'Gemini API key not available'}), 400
@@ -1503,34 +1510,6 @@ def chatbot_response():
             'error': 'An error occurred while processing your request',
             'details': str(e)
         }), 500
-        
-        # Create the prompt
-        prompt = f"""
-        Context: {context_str}
-        
-        User Message: {user_message}
-        
-        Please provide a helpful response that:
-        1. Addresses the user's question directly
-        2. Uses the provided context to inform the response
-        3. Maintains a professional and informative tone
-        4. Includes relevant data insights when available
-        """
-        
-        # Generate response
-        response = model.generate_content(prompt)
-        
-        # Format the response
-        formatted_response = {
-            'response': response.text,
-            'status': 'success'
-        }
-        
-        return jsonify(formatted_response)
-        
-    except Exception as e:
-        logging.error(f"Error in chatbot response: {str(e)}")
-        return jsonify({'error': 'Error generating response'}), 500
 
 @app.route('/api/events', methods=['GET'])
 def get_historical_events():
