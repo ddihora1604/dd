@@ -893,9 +893,14 @@ async function updateWordCloud(query) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const words = await response.json();
-        
+
         if (!Array.isArray(words) || words.length === 0) {
             console.warn('No word data available');
+            // Clear the container and show a message if no data
+            const wordCloudContainer = document.getElementById('word-cloud');
+            if (wordCloudContainer) {
+                wordCloudContainer.innerHTML = '<div class="alert alert-info">No word data available for this query.</div>';
+            }
             return;
         }
 
@@ -905,26 +910,26 @@ async function updateWordCloud(query) {
             console.warn('Word cloud container not found');
             return;
         }
-        
+
         // Clear previous word cloud
         wordCloudContainer.html('');
-        
+
         const width = wordCloudContainer.node().clientWidth;
         const height = 300;
-        
+
         // Define vibrant color palette
         const colorPalette = [
-            '#FF595E', '#FF924C', '#FFCA3A', '#8AC926', '#1982C4', 
+            '#FF595E', '#FF924C', '#FFCA3A', '#8AC926', '#1982C4',
             '#6A4C93', '#F94144', '#F3722C', '#F8961E', '#F9C74F',
             '#90BE6D', '#43AA8B', '#4D908E', '#577590', '#277DA1',
             '#E63946', '#F1FAEE', '#A8DADC', '#457B9D', '#1D3557'
         ];
-        
+
         // Scale for word size
         const fontSize = d3.scaleLinear()
             .domain([0, d3.max(words, d => d.count)])
             .range([12, 60]);
-            
+
         // Create SVG element
         const svg = d3.select('#word-cloud')
             .append('svg')
@@ -944,7 +949,7 @@ async function updateWordCloud(query) {
                     .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.05)')
                     .style('transform', 'translateY(0)');
             });
-        
+
         // Add linear gradient definition
         const defs = svg.append('defs');
         const gradient = defs.append('linearGradient')
@@ -953,112 +958,52 @@ async function updateWordCloud(query) {
             .attr('y1', '0%')
             .attr('x2', '100%')
             .attr('y2', '100%');
-            
+
         gradient.append('stop')
             .attr('offset', '0%')
             .attr('stop-color', '#f8f9fa')
             .attr('stop-opacity', 1);
-            
+
         gradient.append('stop')
             .attr('offset', '100%')
             .attr('stop-color', '#e9ecef')
             .attr('stop-opacity', 1);
-        
+
         // Add background rectangle with gradient
         svg.append('rect')
             .attr('width', width)
             .attr('height', height)
             .attr('fill', 'url(#word-cloud-background)');
-        
+
         // Create word cloud layout
         const wordCloudLayout = d3.layout.cloud()
             .size([width, height])
             .words(words.map(d => ({
                 text: d.word,
                 size: fontSize(d.count),
-                count: d.count
+                count: d.count,
+                // Set all words to horizontal orientation (0 degrees) for simplicity
+                rotate: 0,
+                // Add random font family selection for variety
+                font: Math.random() > 0.7 ? 'Arial' : (Math.random() > 0.5 ? 'Helvetica' : 'Roboto')
             })))
             .padding(5)
-            .rotate(() => (~~(Math.random() * 2) * 90))
+            // Use a fixed rotation of 0 for better layout stability and performance
+            .rotate(() => 0)
             .fontSize(d => d.size)
+            .font(d => d.font)
+            .spiral('archimedean') // Use archimedean spiral for a more compact layout
             .on('end', draw);
 
         // Draw the word cloud
-        let cloudGroup;
+        let cloudGroup; // Declare cloudGroup here to be accessible by draw
+
         function draw(words) {
             // Initialize cloudGroup
             cloudGroup = svg.append('g')
                 .attr('transform', `translate(${width/2},${height/2})`)
                 .attr('class', 'word-cloud-group');
 
-            cloudGroup.selectAll('text')
-                .data(words)
-                .enter()
-                .append('text')
-                .style('font-size', d => `${d.size}px`)
-                .style('font-family', d => d.font || '"Helvetica Neue", Arial, sans-serif')
-                .style('font-weight', d => d.size > 30 ? 'bold' : (d.size > 20 ? 'semibold' : 'normal'))
-                .style('fill', (d, i) => colorPalette[i % colorPalette.length])
-                .style('cursor', 'pointer')
-                .style('opacity', 0)
-                .style('text-shadow', d => d.size > 25 ? '1px 1px 2px rgba(0,0,0,0.1)' : 'none')
-                .attr('text-anchor', 'middle')
-                .attr('transform', d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
-                .text(d => d.text)
-                .on('mouseover', function(event, d) {
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .style('font-size', `${d.size * 1.2}px`)
-                        .style('font-weight', 'bold')
-                        .style('fill', '#0d6efd');
-                })
-                .on('mouseout', function(event, d) {
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .style('font-size', `${d.size}px`)
-                        .style('font-weight', d.size > 30 ? 'bold' : (d.size > 20 ? 'semibold' : 'normal'))
-                        .style('fill', (d, i) => colorPalette[i % colorPalette.length]);
-                })
-                .append('title')
-                .text(d => {
-                    const value = typeof d.value === 'number' ? d.value : (d.count || 0);
-                    return `${d.text}: ${value}`;
-                });
-
-            // Animate words appearing with staggered timing
-            cloudGroup.selectAll('text')
-                .transition()
-                .duration(600)
-                .delay((d, i) => i * 30)
-                .style('opacity', 1);
-        }
-
-        wordCloudLayout.start();
-            
-        // Create layout for topic cloud
-        const topicCloudLayout = d3.layout.cloud()
-            .size([width, height])
-            .words(words.map(d => ({
-                text: d.word, 
-                size: fontSize(d.count),
-                value: d.count,
-                // Set all words to horizontal orientation (0 degrees)
-                rotate: 0,
-                // Add random font family selection for variety
-                font: Math.random() > 0.7 ? 'Arial' : (Math.random() > 0.5 ? 'Helvetica' : 'Roboto')
-            })))
-            .padding(5)
-            .fontSize(d => d.size)
-            .font(d => d.font)
-            .rotate(d => d.rotate)
-            .spiral('archimedean')
-            .on('end', draw);
-        
-        topicCloudLayout.start();
-        
-        function draw(words) {
             // Add words with animations and enhanced styling
             cloudGroup.selectAll('text')
                 .data(words)
@@ -1081,20 +1026,21 @@ async function updateWordCloud(query) {
                         .style('fill', '#0d6efd')
                         .style('font-size', function(d) { return `${d.size * 1.1}px`; });
                 })
-                .on('mouseout', function() {
+                .on('mouseout', function(event, d) {
+                    // Use the correct index 'i' from the data join
+                    const i = cloudGroup.selectAll('text').data().indexOf(d);
                     d3.select(this)
                         .transition()
                         .duration(200)
-                        .style('fill', function(d, i) { return colorPalette[i % colorPalette.length]; })
+                        .style('fill', colorPalette[i % colorPalette.length])
                         .style('font-size', function(d) { return `${d.size}px`; });
                 })
                 .append('title')
                 .text(d => {
                     // Safe handling of value property to avoid the toFixed error
-                    const value = typeof d.value === 'number' ? d.value : (d.value || 0);
-                    return `${d.text}: ${value}`;
-                });
-            
+                    const value = typeof d.count === 'number' ? d.count : (d.count || 0);
+                    return `${d.text}: ${value}`;n                });
+
             // Animate words appearing with staggered timing
             cloudGroup.selectAll('text')
                 .transition()
@@ -1102,6 +1048,32 @@ async function updateWordCloud(query) {
                 .delay((d, i) => i * 30)
                 .style('opacity', 1);
         }
+
+        // Start the single word cloud layout
+        wordCloudLayout.start();
+
+        // REMOVE the second layout and its start call
+        // const topicCloudLayout = d3.layout.cloud()
+        //     .size([width, height])
+        //     .words(words.map(d => ({
+        //         text: d.word,
+        //         size: fontSize(d.count),
+        //         value: d.count,
+        //         // Set all words to horizontal orientation (0 degrees)
+        //         rotate: 0,
+        //         // Add random font family selection for variety
+        //         font: Math.random() > 0.7 ? 'Arial' : (Math.random() > 0.5 ? 'Helvetica' : 'Roboto')
+        //     })))
+        //     .padding(5)
+        //     .fontSize(d => d.size)
+        //     .font(d => d.font)
+        //     .rotate(d => d.rotate)
+        //     .spiral('archimedean')
+        //     .on('end', draw); // This was calling the same draw function again
+
+        // REMOVE the second start call
+        // topicCloudLayout.start();
+
     } catch (error) {
         console.error('Error updating word cloud:', error);
         const wordCloudContainer = document.getElementById('word-cloud');
