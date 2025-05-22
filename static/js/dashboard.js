@@ -4258,7 +4258,8 @@ function processChatMessage(query) {
         let cleanedResponse = data.response.trim()
             .replace(/^```html\s*/g, '')
             .replace(/```\s*$/g, '')
-            .replace(/^["'`]|["'`]$/g, '');
+            .replace(/^["'`]|["'`]$/g, '')
+            .replace(/^<div class=['"']chatbot-response['"']>|<\/div>$/g, '');
             
         // Add response to chat
         addMessageToChat('assistant', cleanedResponse);

@@ -1498,7 +1498,7 @@ def chatbot_response():
         """)
         
         # Format the response with proper HTML structure
-        formatted_response = f"<div class='chatbot-response'>{response.text}</div>"
+        formatted_response = response.text
         
         return jsonify({
             'response': formatted_response

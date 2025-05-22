@@ -32,10 +32,11 @@
             --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             --hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
             --border-radius: 10px;
+            --font-family: 'Lora', serif;
         }
         
         body {
-            font-family: 'Lora', serif;
+            font-family: var(--font-family);
             background-color: var(--light-color);
             color: var(--text-primary);
             line-height: 1.6;
@@ -324,7 +325,7 @@
             border: 1px solid var(--primary-light);
             border-radius: 6px;
             padding: 10px 15px;
-            font-family: 'Lora', serif;
+            font-family: var(--font-family);
         }
         
         .controls .form-control:focus {
@@ -338,7 +339,7 @@
             border-radius: 6px;
             font-weight: 500;
             transition: all 0.3s ease;
-            font-family: 'Lora', serif;
+            font-family: var(--font-family);
         }
         
         .btn-success {
@@ -792,7 +793,7 @@
         
         /* Styling for structured descriptions */
         .description-content {
-            font-family: 'Lora', serif;
+            font-family: var(--font-family);
             line-height: 1.6;
             color: var(--text-primary);
             margin-top: 5px;
@@ -862,7 +863,7 @@
         
         /* AI Summary Content Styling */
         .ai-summary-content {
-            font-family: 'Lora', serif;
+            font-family: var(--font-family);
             line-height: 1.7;
             color: var(--text-primary);
             max-width: 100%;
@@ -993,6 +994,25 @@
             0% { background-color: transparent; }
             30% { background-color: var(--accent-light); }
             100% { background-color: transparent; }
+        }
+        /* Ensure all text elements use Lora */
+        h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label, a {
+            font-family: var(--font-family);
+        }
+        
+        /* Ensure form controls use Lora */
+        .form-control, .btn, .nav-link, .dropdown-item {
+            font-family: var(--font-family);
+        }
+        
+        /* Ensure chatbot messages use Lora */
+        .user-message, .assistant-message, .system-message, .message-content {
+            font-family: var(--font-family);
+        }
+        
+        /* Ensure dynamically generated content uses Lora */
+        .chatbot-response, .chatbot-response * {
+            font-family: var(--font-family) !important;
         }
     </style>
 </head>
@@ -1575,6 +1595,25 @@
             0% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
             100% { transform: translateY(0); }
+        }
+        /* Ensure all text elements use Lora */
+        h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label, a {
+            font-family: var(--font-family);
+        }
+        
+        /* Ensure form controls use Lora */
+        .form-control, .btn, .nav-link, .dropdown-item {
+            font-family: var(--font-family);
+        }
+        
+        /* Ensure chatbot messages use Lora */
+        .user-message, .assistant-message, .system-message, .message-content {
+            font-family: var(--font-family);
+        }
+        
+        /* Ensure dynamically generated content uses Lora */
+        .chatbot-response, .chatbot-response * {
+            font-family: var(--font-family) !important;
         }
     </style>
 
