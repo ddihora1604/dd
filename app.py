@@ -695,8 +695,10 @@ def get_topics():
     if len(filtered_data) == 0:
         return jsonify([])
     
+    # Create a copy to avoid SettingWithCopyWarning
+    filtered_data = filtered_data.copy()
     # Prepare text data - combine title and selftext for better topic detection
-    filtered_data['combined_text'] = filtered_data['title'] + ' ' + filtered_data['selftext'].fillna('')
+    filtered_data.loc[:, 'combined_text'] = filtered_data['title'] + ' ' + filtered_data['selftext'].fillna('')
     
     # Prepare text data
     vectorizer = CountVectorizer(max_df=0.95, min_df=2, stop_words='english', max_features=1000)
@@ -1097,11 +1099,11 @@ def get_ai_summary():
     query = request.args.get('query', '')
     
     # Filter data based on query
-    filtered_data = data
+    filtered_data = data.copy()
     if query:
-        filtered_data = data[
-            data['selftext'].str.contains(query, case=False, na=False) |
-            data['title'].str.contains(query, case=False, na=False)
+        filtered_data = filtered_data[
+            filtered_data['selftext'].str.contains(query, case=False, na=False) |
+            filtered_data['title'].str.contains(query, case=False, na=False)
         ]
     
     # Get top words and authors
@@ -1110,13 +1112,17 @@ def get_ai_summary():
     top_authors = get_top_contributors(query=query)
     
     # Format the summary text
+    # Calculate time span safely
+    time_span = pd.Timedelta(filtered_data['created_utc'].max() - filtered_data['created_utc'].min())
+    time_span_days = time_span.total_seconds() / (24 * 3600)
+    
     summary_text = f"""
     Analysis Summary for query: {query}
     
     Total Posts: {len(filtered_data)}
     Unique Authors: {filtered_data['author'].nunique()}
     Average Comments: {filtered_data['num_comments'].mean():.2f}
-    Time Span: {(filtered_data['created_utc'].max() - filtered_data['created_utc'].min()) / (24 * 3600):.1f} days
+    Time Span: {time_span_days:.1f} days
     
     Top Contributors:
     {', '.join([f"{author['author']} ({author['count']} posts)" for author in top_authors[:5]])}
@@ -1134,7 +1140,7 @@ def get_ai_summary():
         'total_posts': len(filtered_data),
         'unique_authors': filtered_data['author'].nunique(),
             'avg_comments': float(filtered_data['num_comments'].mean()),
-            'time_span': float((filtered_data['created_utc'].max() - filtered_data['created_utc'].min()) / (24 * 3600)),
+            'time_span': float((filtered_data['created_utc'].max() - filtered_data['created_utc'].min()).total_seconds() / (24 * 3600)),
             'top_words': top_words,
             'top_authors': top_authors
         }
@@ -1152,11 +1158,11 @@ def get_common_words(query=None, limit=50):
         limit = int(request.args.get('limit', 50))
     
     # Filter data based on query
-    filtered_data = data
+    filtered_data = data.copy()
     if query:
-        filtered_data = data[
-            data['selftext'].str.contains(query, case=False, na=False) |
-            data['title'].str.contains(query, case=False, na=False)
+        filtered_data = filtered_data[
+            filtered_data['selftext'].str.contains(query, case=False, na=False) |
+            filtered_data['title'].str.contains(query, case=False, na=False)
         ]
     
     # Combine text data
@@ -1394,19 +1400,109 @@ def get_semantic_map():
 
 @app.route('/api/chatbot', methods=['POST'])
 def chatbot_response():
-    if not has_gemini or not GEMINI_API_KEY:
-        return jsonify({'error': 'Gemini API key not available'}), 400
-    
     try:
-        data = request.get_json()
-        user_message = data.get('message', '')
-        context = data.get('context', {})
+        request_data = request.json
+        query = request_data.get('query')
+        history = request_data.get('history', [])
         
-        # Configure the model
-        model = genai.GenerativeModel('gemini-pro')
+        if not query:
+            return jsonify({'error': 'No query provided'}), 400
+            
+        # Load and filter relevant data based on query
+        filtered_data = None
+        global data  # Explicitly reference the global data variable
+        if data is not None:
+            # Use content_text instead of selftext for filtering
+            if 'content_text' in data.columns:
+                filtered_data = data[data['content_text'].str.contains(query, case=False, na=False) | 
+                                  data['title'].str.contains(query, case=False, na=False)]
+            else:
+                # Fallback to selftext if content_text doesn't exist
+                filtered_data = data[data['selftext'].str.contains(query, case=False, na=False) | 
+                                  data['title'].str.contains(query, case=False, na=False)]
         
-        # Prepare the context for the model
-        context_str = json.dumps(context) if context else "No additional context provided."
+        # Prepare context from filtered data
+        context = ''
+        if filtered_data is not None and not filtered_data.empty:
+            context += f"Based on analysis of {len(filtered_data)} relevant posts:\n"
+            # Add key metrics
+            context += f"- Total posts: {len(filtered_data)}\n"
+            context += f"- Unique authors: {filtered_data['author'].nunique()}\n"
+            context += f"- Average comments: {filtered_data['num_comments'].mean():.1f}\n"
+            
+            # Add time span
+            if 'created_utc' in filtered_data.columns:
+                time_span = (filtered_data['created_utc'].max() - filtered_data['created_utc'].min()).days
+                context += f"- Time span: {time_span} days\n"
+            
+            # Add top keywords (using simple word frequency)
+            # Use content_text instead of selftext if available
+            content_column = 'content_text' if 'content_text' in filtered_data.columns else 'selftext'
+            words = ' '.join(filtered_data[content_column].fillna('') + ' ' + filtered_data['title'].fillna('')).lower()
+            words = re.findall(r'\b[a-z]{4,}\b', words)
+            word_freq = Counter(words)
+            # Remove common words
+            for word in stop_words:
+                word_freq.pop(word, None)
+            top_keywords = [word for word, _ in word_freq.most_common(5)]
+            if top_keywords:
+                context += f"- Top keywords: {', '.join(top_keywords)}\n"
+        
+        if not has_gemini or not GEMINI_API_KEY:
+            return jsonify({'error': 'Gemini API key not available'}), 400
+
+        # Configure Gemini
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        
+        # Prepare chat messages
+        messages = [{
+            "role": "system",
+            "content": f"You are a helpful AI assistant analyzing social media data. Use the following context to answer questions:\n{context}"
+        }]
+        
+        # Add chat history
+        for msg in history:
+            messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+        
+        # Add user's current query
+        messages.append({
+            "role": "user",
+            "content": query
+        })
+        
+        # Generate response using Gemini
+        chat = model.start_chat(history=[])
+        response = chat.send_message(f"""
+        Context: {context}
+        
+        User Query: {query}
+        
+        Please provide a detailed, well-structured response that:
+        1. Directly addresses the user's query
+        2. Uses data from the context when relevant
+        3. Organizes information with appropriate headings and bullet points
+        4. Maintains a professional and analytical tone
+        5. Focuses on factual insights from the data
+        
+        Format the response in clean HTML with appropriate tags for structure.
+        """)
+        
+        # Format the response with proper HTML structure
+        formatted_response = f"<div class='chatbot-response'>{response.text}</div>"
+        
+        return jsonify({
+            'response': formatted_response
+        })
+        
+    except Exception as e:
+        logging.error(f"Error in chatbot response: {str(e)}")
+        return jsonify({
+            'error': 'An error occurred while processing your request',
+            'details': str(e)
+        }), 500
         
         # Create the prompt
         prompt = f"""

@@ -889,19 +889,27 @@ async function updateContributorsOverview(query) {
 async function updateWordCloud(query) {
     try {
         const response = await fetch(`/api/common_words?query=${encodeURIComponent(query)}&limit=100`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const words = await response.json();
         
+        if (!Array.isArray(words) || words.length === 0) {
+            console.warn('No word data available');
+            return;
+        }
+
         // Get the word cloud container and check if it exists
-        const wordCloudContainer = document.getElementById('word-cloud');
-        if (!wordCloudContainer) {
+        const wordCloudContainer = d3.select('#word-cloud');
+        if (wordCloudContainer.empty()) {
             console.warn('Word cloud container not found');
             return;
         }
         
         // Clear previous word cloud
-        d3.select('#word-cloud').html('');
+        wordCloudContainer.html('');
         
-        const width = wordCloudContainer.clientWidth;
+        const width = wordCloudContainer.node().clientWidth;
         const height = 300;
         
         // Define vibrant color palette
@@ -917,7 +925,7 @@ async function updateWordCloud(query) {
             .domain([0, d3.max(words, d => d.count)])
             .range([12, 60]);
             
-        // Create SVG with gradient background
+        // Create SVG element
         const svg = d3.select('#word-cloud')
             .append('svg')
             .attr('width', width)
@@ -938,8 +946,8 @@ async function updateWordCloud(query) {
             });
         
         // Add linear gradient definition
-        const gradient = svg.append('defs')
-            .append('linearGradient')
+        const defs = svg.append('defs');
+        const gradient = defs.append('linearGradient')
             .attr('id', 'word-cloud-background')
             .attr('x1', '0%')
             .attr('y1', '0%')
@@ -962,12 +970,75 @@ async function updateWordCloud(query) {
             .attr('height', height)
             .attr('fill', 'url(#word-cloud-background)');
         
-        // Add the word cloud group
-        const cloudGroup = svg.append('g')
-            .attr('transform', `translate(${width/2},${height/2})`);
+        // Create word cloud layout
+        const wordCloudLayout = d3.layout.cloud()
+            .size([width, height])
+            .words(words.map(d => ({
+                text: d.word,
+                size: fontSize(d.count),
+                count: d.count
+            })))
+            .padding(5)
+            .rotate(() => (~~(Math.random() * 2) * 90))
+            .fontSize(d => d.size)
+            .on('end', draw);
+
+        // Draw the word cloud
+        let cloudGroup;
+        function draw(words) {
+            // Initialize cloudGroup
+            cloudGroup = svg.append('g')
+                .attr('transform', `translate(${width/2},${height/2})`)
+                .attr('class', 'word-cloud-group');
+
+            cloudGroup.selectAll('text')
+                .data(words)
+                .enter()
+                .append('text')
+                .style('font-size', d => `${d.size}px`)
+                .style('font-family', d => d.font || '"Helvetica Neue", Arial, sans-serif')
+                .style('font-weight', d => d.size > 30 ? 'bold' : (d.size > 20 ? 'semibold' : 'normal'))
+                .style('fill', (d, i) => colorPalette[i % colorPalette.length])
+                .style('cursor', 'pointer')
+                .style('opacity', 0)
+                .style('text-shadow', d => d.size > 25 ? '1px 1px 2px rgba(0,0,0,0.1)' : 'none')
+                .attr('text-anchor', 'middle')
+                .attr('transform', d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
+                .text(d => d.text)
+                .on('mouseover', function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style('font-size', `${d.size * 1.2}px`)
+                        .style('font-weight', 'bold')
+                        .style('fill', '#0d6efd');
+                })
+                .on('mouseout', function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style('font-size', `${d.size}px`)
+                        .style('font-weight', d.size > 30 ? 'bold' : (d.size > 20 ? 'semibold' : 'normal'))
+                        .style('fill', (d, i) => colorPalette[i % colorPalette.length]);
+                })
+                .append('title')
+                .text(d => {
+                    const value = typeof d.value === 'number' ? d.value : (d.count || 0);
+                    return `${d.text}: ${value}`;
+                });
+
+            // Animate words appearing with staggered timing
+            cloudGroup.selectAll('text')
+                .transition()
+                .duration(600)
+                .delay((d, i) => i * 30)
+                .style('opacity', 1);
+        }
+
+        wordCloudLayout.start();
             
-        // Create layout
-        const layout = d3.layout.cloud()
+        // Create layout for topic cloud
+        const topicCloudLayout = d3.layout.cloud()
             .size([width, height])
             .words(words.map(d => ({
                 text: d.word, 
@@ -985,7 +1056,7 @@ async function updateWordCloud(query) {
             .spiral('archimedean')
             .on('end', draw);
         
-        layout.start();
+        topicCloudLayout.start();
         
         function draw(words) {
             // Add words with animations and enhanced styling
@@ -1881,7 +1952,7 @@ async function updateTopics(query) {
         
         // PERFORMANCE OPTIMIZATION: Simplified word cloud with fewer words
         // Create layout with fewer words and simplified options
-        const layout = d3.layout.cloud()
+        const summaryCloudLayout = d3.layout.cloud()
             .size([width, height])
             .words(wordCloudData)
             .padding(3)
@@ -1940,7 +2011,7 @@ async function updateTopics(query) {
                     .style('opacity', 1);
             });
         
-        layout.start();
+        summaryCloudLayout.start();
     }
 }
 
@@ -4017,6 +4088,21 @@ function setupChatbotInteractions() {
     const chatInput = document.getElementById('chat-input');
     const sendButton = document.getElementById('send-chat-btn');
     
+    // Add welcome message
+    addMessageToChat('system', 
+        `<div class="welcome-message">
+            <h4 class="mb-3">👋 Welcome to the AI Data Analysis Assistant!</h4>
+            <p class="mb-2">I can help you analyze social media data and provide insights about:</p>
+            <ul class="list-unstyled mb-3">
+                <li class="mb-2">• Trending topics and discussions</li>
+                <li class="mb-2">• Sentiment patterns and changes</li>
+                <li class="mb-2">• User behavior and influence</li>
+                <li class="mb-2">• Community interactions and coordination</li>
+            </ul>
+            <p class="mb-0">Try asking a question or click one of the suggested queries below!</p>
+        </div>`
+    );
+    
     // Send message on button click
     if (sendButton) {
         sendButton.addEventListener('click', function() {
@@ -4027,11 +4113,19 @@ function setupChatbotInteractions() {
     // Send message on Enter key
     if (chatInput) {
         chatInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendChatMessage();
             }
         });
     }
+}
+
+// Function to handle suggested query clicks
+function suggestQuery(button) {
+    const chatInput = document.getElementById('chat-input');
+    chatInput.value = button.textContent.trim();
+    sendChatMessage();
 }
 
 function sendChatMessage() {
@@ -4069,25 +4163,27 @@ function addMessageToChat(role, content, time = null) {
     contentP.className = 'message-content';
     
     // Handle content based on role
-    if (role === 'assistant') {
-        // Check if content appears to be raw HTML (starting with quotes, backticks, or HTML tags)
+    if (role === 'system' || role === 'assistant') {
+        // For system and assistant messages, allow HTML but sanitize
         let cleanContent = content;
         
         // Clean up obvious code blocks or quote markers
         if (typeof cleanContent === 'string') {
-            cleanContent = cleanContent.replace(/^```html\s*/g, '').replace(/```\s*$/g, '');
-            cleanContent = cleanContent.replace(/^["'`]|["'`]$/g, '');
+            cleanContent = cleanContent.trim()
+                .replace(/^```html\s*/g, '')
+                .replace(/```\s*$/g, '')
+                .replace(/^["'`]|["'`]$/g, '');
             
             // If content still doesn't look like HTML, wrap it
-            if (!cleanContent.trim().startsWith('<')) {
+            if (!cleanContent.startsWith('<')) {
                 cleanContent = `<p>${cleanContent}</p>`;
             }
         }
         
-        // Set the HTML content directly
+        // Set the HTML content
         contentP.innerHTML = cleanContent;
     } else {
-        // For user and system messages, escape HTML
+        // For user messages, escape HTML
         contentP.textContent = content;
     }
     
@@ -4137,74 +4233,92 @@ function processChatMessage(query) {
     const vizSuggestions = document.getElementById('viz-suggestions');
     const relatedMetrics = document.getElementById('related-metrics');
     
-    if (vizSuggestions) {
-        vizSuggestions.style.display = 'none';
-    }
-    
-    if (relatedMetrics) {
-        relatedMetrics.style.display = 'none';
-    }
+    if (vizSuggestions) vizSuggestions.style.display = 'none';
+    if (relatedMetrics) relatedMetrics.style.display = 'none';
     
     // Call API to process the message
     fetch('/api/chatbot', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             query: query,
             history: chatHistory.slice(-5) // Send last 5 messages for context
         })
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error(`Server returned ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Server returned ${response.status}`);
         return response.json();
     })
     .then(data => {
-        // Hide typing indicator
         hideTypingIndicator();
         
-        console.log("Received response from server:", data.response ? data.response.substring(0, 100) + "..." : "No response");
+        if (!data.response) throw new Error("Empty response from server");
         
-        // Make sure we have a valid response
-        if (!data.response) {
-            throw new Error("Empty response from server");
-        }
-        
-        // Clean up any potential HTML issues
-        let cleanedResponse = data.response;
-        if (typeof cleanedResponse === 'string') {
-            cleanedResponse = cleanedResponse.trim();
-            // Remove any potential code block markers
-            cleanedResponse = cleanedResponse.replace(/^```html\s*/g, '').replace(/```\s*$/g, '');
-            cleanedResponse = cleanedResponse.replace(/^["'`]|["'`]$/g, '');
-        }
-        
-        // Add AI response to chat
+        // Clean and format the response
+        let cleanedResponse = data.response.trim()
+            .replace(/^```html\s*/g, '')
+            .replace(/```\s*$/g, '')
+            .replace(/^["'`]|["'`]$/g, '');
+            
+        // Add response to chat
         addMessageToChat('assistant', cleanedResponse);
-        
-        // Add to chat history
         chatHistory.push({ role: 'assistant', content: cleanedResponse });
         
-        // Display visualization suggestions if any
-        if (data.visualization_suggestions && data.visualization_suggestions.length > 0) {
-            displayVisualizationSuggestions(data.visualization_suggestions);
+        // Add interactive elements to the response
+        const responseElement = document.querySelector('.assistant-message:last-child .message-content');
+        if (responseElement) {
+            // Add copy buttons for code blocks
+            responseElement.querySelectorAll('pre code').forEach(block => {
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-code-btn';
+                copyButton.innerHTML = '<i class="bi bi-clipboard"></i>';
+                copyButton.onclick = () => {
+                    navigator.clipboard.writeText(block.textContent);
+                    copyButton.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+                    setTimeout(() => copyButton.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+                };
+                block.parentNode.insertBefore(copyButton, block);
+            });
+
+            // Add collapsible sections
+            responseElement.querySelectorAll('h3, h4').forEach(heading => {
+                if (!heading.hasAttribute('data-collapsible')) {
+                    heading.setAttribute('data-collapsible', 'true');
+                    heading.style.cursor = 'pointer';
+                    heading.innerHTML += ' <i class="bi bi-chevron-down"></i>';
+                    heading.onclick = () => {
+                        const content = heading.nextElementSibling;
+                        if (content) {
+                            const isVisible = content.style.display !== 'none';
+                            content.style.display = isVisible ? 'none' : 'block';
+                            heading.querySelector('i').className = `bi bi-chevron-${isVisible ? 'down' : 'up'}`;
+                        }
+                    };
+                }
+            });
+
+            // Add tab navigation links
+            responseElement.querySelectorAll('a[data-section]').forEach(link => {
+                link.classList.add('dashboard-link');
+                link.addEventListener('click', dashboardLinkClickHandler);
+            });
+
+            // Add tooltips for data points
+            responseElement.querySelectorAll('.data-point').forEach(point => {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'data-tooltip';
+                tooltip.textContent = point.getAttribute('data-info');
+                point.appendChild(tooltip);
+            });
         }
-        
-        // Display metrics if any
-        if (data.metrics) {
-            displayRelatedMetrics(data.metrics);
-        }
+
+        // Handle visualization suggestions and metrics
+        if (data.visualization_suggestions?.length) displayVisualizationSuggestions(data.visualization_suggestions);
+        if (data.metrics) displayRelatedMetrics(data.metrics);
     })
     .catch(error => {
-        // Hide typing indicator
         hideTypingIndicator();
-        
         console.error('Error processing chat message:', error);
-        
-        // Add error message
         addMessageToChat('assistant', `<div class='chatbot-response'><h3>Error</h3><p>I'm sorry, I couldn't process your request: ${error.message}</p></div>`);
     });
 }

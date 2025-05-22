@@ -1409,13 +1409,11 @@
             <!-- Chatbot Tab -->
             <div class="tab-pane fade" id="chatbot-panel" role="tabpanel" aria-labelledby="chatbot-tab">
                 <div class="chart-container">
-                    <h3><i class="bi bi-robot"></i> Interactive Chatbot</h3>
-                    <div class="alert alert-info mb-3">
-                        <i class="bi bi-info-circle"></i> Ask questions about the trends, topics, communities, or specific themes across social media platforms.
-                    </div>
+                    <h3><i class="bi bi-robot"></i> AI-Powered Assistant</h3>
                     
                     <!-- Chat Messages Area -->
-                    <div id="chat-messages" style="overflow-y: auto; border: 1px solid var(--neutral-color); border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: var(--light-color);">
+                    <div id="chat-messages" class="chat-messages-container">
+                        <!-- Welcome message will be added by JavaScript -->
                     </div>
                     
                     <!-- Chat Input Area -->
@@ -1423,9 +1421,25 @@
                         <div class="row">
                             <div class="col">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="chat-input" placeholder="Ask a question about the dataset...">
+                                    <input type="text" class="form-control" id="chat-input" 
+                                           placeholder="Ask about trends, sentiment, topics, or user behavior...">
                                     <button class="btn btn-primary" id="send-chat-btn">
                                         <i class="bi bi-send"></i> Send
+                                    </button>
+                                </div>
+                                <div class="suggested-queries mt-3">
+                                    <small class="text-muted d-block mb-2">Try asking about:</small>
+                                    <button class="btn btn-sm btn-outline-secondary me-2 mb-2" onclick="suggestQuery(this)">
+                                        What are the main topics being discussed?
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2 mb-2" onclick="suggestQuery(this)">
+                                        Show me sentiment trends over time
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2 mb-2" onclick="suggestQuery(this)">
+                                        Who are the most influential contributors?
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2 mb-2" onclick="suggestQuery(this)">
+                                        Identify any coordinated behavior patterns
                                     </button>
                                 </div>
                             </div>
@@ -1448,11 +1462,34 @@
 
     <!-- Add styles for chat messages -->
     <style>
-        /* Chat Message Styles */
-        #chat-messages {
+        /* Enhanced Chat Message Styles */
+        .chat-messages-container {
             display: flex;
             flex-direction: column;
             gap: 16px;
+            overflow-y: auto;
+            border: 1px solid var(--neutral-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background-color: var(--light-color);
+            min-height: 400px;
+            max-height: 600px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages-container::-webkit-scrollbar-track {
+            background: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        .chat-messages-container::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
         }
         
         .user-message, .assistant-message, .system-message {
