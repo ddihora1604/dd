@@ -12,3 +12,4 @@ scipy
 google-generativeai
 nltk
 gunicorn
+sentence-transformers
