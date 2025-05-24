@@ -7,7 +7,6 @@ networkx
 python-dotenv
 python-louvain
 requests
-umap-learn
 scipy
 google-generativeai
 nltk
