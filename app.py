@@ -12,7 +12,6 @@ import requests
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
-import umap.umap_ as umap
 import traceback
 import math
 import glob
