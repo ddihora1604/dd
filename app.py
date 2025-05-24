@@ -1903,13 +1903,14 @@ def semantic_query():
         traceback.print_exc()
         return jsonify({'error': f'Error during semantic query: {str(e)}'}), 500
 
+load_success = load_dataset()
+if not load_success:
+    print("WARNING: Failed to load dataset. Make sure data file exists at ./data/data.jsonl")
+    # Create data directory if it doesn't exist
+    os.makedirs("./data", exist_ok=True)
+    print("Created data directory. Please place your data.jsonl file in the ./data folder.")
+
 if __name__ == '__main__':
     # Load dataset on startup
-    load_success = load_dataset()
-    if not load_success:
-        print("WARNING: Failed to load dataset. Make sure data file exists at ./data/data.jsonl")
-        # Create data directory if it doesn't exist
-        os.makedirs("./data", exist_ok=True)
-        print("Created data directory. Please place your data.jsonl file in the ./data folder.")
     
     app.run(debug=True)
