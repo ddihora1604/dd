@@ -10,4 +10,3 @@ requests
 scipy
 google-generativeai
 nltk
-gunicorn
