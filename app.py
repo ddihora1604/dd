@@ -396,8 +396,11 @@ def get_timeseries():
     Returns:
         JSON: Array of objects containing date and post count
     """
+    load_success = load_dataset()
+    global data
     if data is None:
-        return jsonify({'error': 'No data loaded'}), 400
+        return jsonify({'error': 'No data loaded', 'success': load_success, 'data': data}), 400
+
     
     query = request.args.get('query', '')
     start_date = request.args.get('start_date')
